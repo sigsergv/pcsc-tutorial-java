@@ -237,11 +237,6 @@ class BerTlv {
             ArrayList<String> partStrings = new ArrayList<String>(parts.size());
             for (BerTlv p : parts) {
                 partStrings.add(p.toString().replaceAll("(?m)^", "  "));
-                // ArrayList<String> lines = new ArrayList<String>();
-                // for (String x : p.toString().split("\n")) {
-                //     lines.add("  " + x);
-                // }
-                // partStrings.add(String.join("\n", lines));
             }
             String partStringsJoined = String.join("\n", partStrings);
 
