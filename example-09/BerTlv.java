@@ -48,13 +48,18 @@ class BerTlv {
         }
     }
 
+    public static class ConstraintException extends Exception {
+        public ConstraintException(String message) {
+            super(message);
+        }
+    }
+
     private final byte[] tag;
     private final Encoding tagEncoding;
     private final Class tagClass;
-    // private final int length;
 
     // primitive value
-    private byte[] value;
+    private final byte[] value;
 
     // constructed value parts
     private final List<BerTlv> parts;
@@ -62,7 +67,7 @@ class BerTlv {
 
     // constructed value constructor
     public BerTlv(byte[] tag, List<BerTlv> parts)
-        throws ParsingException
+        throws ConstraintException
     {
         this.tag = tag;
         this.parts = parts;
@@ -71,14 +76,14 @@ class BerTlv {
         this.tagEncoding = Encoding.CONSTRUCTED;
         this.tagClass = getClassFromTag(tag);
         if (getEncodingFromTag(tag) != this.tagEncoding) {
-            throw new ParsingException("Incorrect tag encoding");
+            throw new ConstraintException("Incorrect tag encoding");
         }
     }
 
 
     // primitive value constructor
     public BerTlv(byte[] tag, byte[] value)
-        throws ParsingException
+        throws ConstraintException
     {
         this.tag = tag;
         this.parts = null;
@@ -87,15 +92,30 @@ class BerTlv {
         this.tagEncoding = Encoding.PRIMITIVE;
         this.tagClass = getClassFromTag(tag);
         if (getEncodingFromTag(tag) != this.tagEncoding) {
-            throw new ParsingException("Incorrect tag encoding");
+            throw new ConstraintException("Incorrect tag encoding");
         }
     }
 
+
+    /**
+     * Add new BerTlv part to constructed
+     * 
+     * @param  part [description]
+     * @return      [description]
+     */
+    public BerTlv addPart(BerTlv part)
+        throws ConstraintException
+    {
+        return this;
+    }
+
+
     /**
      * Parse bytes into ONE BerTlv object ignoring remaining data if there are any.
-     * @param  bytes            [description]
-     * @return                  [description]
-     * @throws ParsingException [description]
+     * 
+     * @param  bytes            bytes array to parse
+     * @return                  parsed BerTlv object, remaining bytes are ignored
+     * @throws ParsingException 
      */
     public static BerTlv parseBytes(byte[] bytes)
         throws ParsingException
@@ -104,6 +124,24 @@ class BerTlv {
         return p.value;
     }
 
+
+    public List<BerTlv> getParts()
+        throws ConstraintException
+    {
+        if (this.tagEncoding != Encoding.CONSTRUCTED) {
+            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
+        }
+        return parts;
+    }
+
+
+    /**
+     * Parse one chunk of continuous data.
+     * 
+     * @param  bytes            bytes array to parse
+     * @return                  Pair structure that contains size of processed data and resulting BerTlv object
+     * @throws ParsingException
+     */
     private static Pair parseChunk(byte[] bytes)
         throws ParsingException
     {
@@ -179,6 +217,8 @@ class BerTlv {
             Pair pair = new Pair(p+length, t);
             return pair;
 
+        } catch (ConstraintException e) {
+            throw new ParsingException("Inconsistent data");
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new ParsingException("Premature end of bytes");
         }
@@ -189,75 +229,31 @@ class BerTlv {
         String s;
 
         if (tagEncoding == Encoding.PRIMITIVE) {
-            s = String.format("{tag: %s enc: %s value: %s}", 
+            s = String.format("TAG:   %s(PRIMITIVE)%nVALUE: %s", 
                 Util.hexify(tag), 
-                tagEncoding,
                 Util.hexify(value));
         } else {
-            s = String.format("{tag: %s enc: %s parts: %d}", 
+            // get representations of parts and indent them
+            ArrayList<String> partStrings = new ArrayList<String>(parts.size());
+            for (BerTlv p : parts) {
+                ArrayList<String> lines = new ArrayList<String>();
+                for (String x : p.toString().split("\n")) {
+                    lines.add("  " + x);
+                }
+                partStrings.add(String.join("\n", lines));
+            }
+            String partStringsJoined = String.join("\n", partStrings);
+
+            s = String.format("TAG:   %s(CONSTRUCTED)%n%s", 
                 Util.hexify(tag), 
-                tagEncoding,
-                parts.size());
+                partStringsJoined);
         }
         return s;
     }
 
-    public static void main(String[] args) {
-        // testing method
-
-        byte[] data;
-
-        System.out.println("Test 1");
-        data = Util.toByteArray("6F");
-        try {
-            BerTlv d = parseBytes(data);
-            System.out.println("FAILED");
-        } catch (ParsingException e) {
-            System.out.printf("PASSED: Parse failed: %s%n", e.getMessage());
-        }
-
-        System.out.println("Test 2");
-        data = Util.toByteArray("9F 38 01 91");
-        try {
-            BerTlv d = parseBytes(data);
-            System.out.printf("PASSED, d=%s%n", d);
-        } catch (ParsingException e) {
-            System.out.printf("Parse failed: %s%n", e.getMessage());
-        }
-
-        System.out.println("Test 3");
-        data = Util.toByteArray("9F B8 D3 71 01 59");
-        try {
-            BerTlv d = parseBytes(data);
-            System.out.printf("PASSED, d=%s%n", d);
-        } catch (ParsingException e) {
-            System.out.printf("Parse failed: %s%n", e.getMessage());
-        }
-
-        System.out.println("Test 4");
-        data = Util.toByteArray("6F 28 84 0E 31 50 41 59 2E 53 59 53 2E 44 44 46 30 31 A5 16 88 01 01 5F 2D 08 72 75 65 6E 66 72 64 65 BF 0C 05 9F 4D 02 0B 0A");
-        try {
-            BerTlv d = parseBytes(data);
-            System.out.printf("PASSED, d=%s%n", d);
-        } catch (ParsingException e) {
-            System.out.printf("Parse failed: %s%n", e.getMessage());
-        }
-
-        // System.out.println("Test 5");
-        // // 0xE329=58153 bytes
-        // data = Util.toByteArray("50 82 E3 29 00 00");
-        // try {
-        //     BerTlv d = parseBytes(data);
-        //     System.out.println("PASSED");
-        // } catch (ParsingException e) {
-        //     System.out.printf("Parse failed: %s%n", e.getMessage());
-        // }
-
-    }
-
     private static class Pair {
-        public BerTlv value;
-        public int size;
+        public final BerTlv value;
+        public final int size;
         public Pair(int size, BerTlv value) {
             this.size = size;
             this.value = value;
