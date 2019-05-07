@@ -80,7 +80,7 @@ class ReadCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read card data");
             }
-            byte[] EEPROMData1 = Util.responseDataOnly(answer.getBytes());
+            byte[] EEPROMData1 = answer.getData();
 
             // Then read remaining 224=0xE0 (in "Le" field) bytes starting with address 0x20 (in "P2" field)
             // field "P1" is ignored
@@ -91,7 +91,7 @@ class ReadCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read card data");
             }
-            byte[] EEPROMData2 = Util.responseDataOnly(answer.getBytes());
+            byte[] EEPROMData2 = answer.getData();
 
             byte[] EEPROMData = new byte[256];
             for (int i=0; i<32; i++) {
@@ -120,7 +120,7 @@ class ReadCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read protection memory data");
             }
-            byte[] PRBData = Util.responseDataOnly(answer.getBytes());
+            byte[] PRBData = answer.getData();
             System.out.printf("Protection memory bits:%n");
             for (int i=0; i<32; i++) {
                 System.out.printf("%02d ", i);
@@ -150,7 +150,7 @@ class ReadCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read security memory data");
             }
-            byte[] ECData = Util.responseDataOnly(answer.getBytes());
+            byte[] ECData = answer.getData();
             System.out.printf("EC: %02X%n", ECData[0]);
 
             // disconnect card

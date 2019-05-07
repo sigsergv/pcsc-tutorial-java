@@ -107,7 +107,7 @@ class TopUpBalance {
                 throw new Util.CardCheckFailedException("Failed to read block with Key A.");
             }
             // take first 8 bytes
-            data = Util.responseDataOnly(answer.getBytes());
+            data = answer.getData();
             data = copyOfRange(data, 0, 8);
             long balance = Util.bytesToLong(data);
 

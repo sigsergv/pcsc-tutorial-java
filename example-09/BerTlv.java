@@ -96,6 +96,19 @@ class BerTlv {
         }
     }
 
+    public byte[] getTag() {
+        return tag;
+    }
+
+    public byte[] getValue()
+        throws ConstraintException
+    {
+        if (this.tagEncoding == Encoding.CONSTRUCTED) {
+            throw new ConstraintException("Incorrect tag encoding for getValue method");
+        }
+        return value;
+    }
+
 
     /**
      * Add new BerTlv part to constructed
@@ -124,14 +137,53 @@ class BerTlv {
         return p.value;
     }
 
+    /**
+     * Get first part tagged with tag that has binary representation tagBytesRepr
+     * @param  tagBytesRepr        [description]
+     * @return                     [description]
+     * @throws ConstraintException [description]
+     */
+    public BerTlv getPart(String tagBytesRepr)
+        throws ConstraintException
+    {
+        return getPart(Util.toByteArray(tagBytesRepr));
+    }
 
-    public List<BerTlv> getParts()
+    /**
+     * Get first part tagged with tag tag.
+     * @param  tag                 [description]
+     * @return                     [description]
+     * @throws ConstraintException [description]
+     */
+    public BerTlv getPart(byte[] tag)
         throws ConstraintException
     {
         if (this.tagEncoding != Encoding.CONSTRUCTED) {
             throw new ConstraintException("Only CONSTRUCTED objects have parts.");
         }
-        return parts;
+        BerTlv part = null;
+        for (BerTlv p : parts) {
+            if (java.util.Arrays.equals(p.getTag(), tag)) {
+                part = p;
+                break;
+            }
+        }
+        return part;
+    }
+
+
+    /**
+     * Get all parts
+     * @return [description]
+     */
+    public BerTlv[] getParts()
+        throws ConstraintException
+    {
+        if (this.tagEncoding != Encoding.CONSTRUCTED) {
+            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
+        }
+        BerTlv[] res = new BerTlv[parts.size()];
+        return parts.toArray(res);
     }
 
 
@@ -188,6 +240,7 @@ class BerTlv {
             for (int i=0; i<lengthBytesLen; i++) {
                 int x = lengthBytes[i];
                 if (x < 0) {
+                    // we use this code because all Java types are signed
                     x += 256;
                 }
                 length = length*256 + x;
@@ -224,7 +277,11 @@ class BerTlv {
         }
     }
 
-
+    /**
+     * Recursively prints annotated object content.
+     * 
+     * @return [description]
+     */
     public String toString() {
         String s;
 
@@ -247,6 +304,9 @@ class BerTlv {
         return s;
     }
 
+    /**
+     * We use this class internally to return both BerTlv object and consumed bytes array size.
+     */
     private static class Pair {
         public final BerTlv value;
         public final int size;
@@ -256,6 +316,14 @@ class BerTlv {
         }
     }
 
+    /**
+     * Local method to copy subarray into a new array.
+     * 
+     * @param  buffer [description]
+     * @param  from   [description]
+     * @param  length [description]
+     * @return        [description]
+     */
     private static byte[] copy(byte[] buffer, int from, int length) {
         byte[] res = new byte[length];
         System.arraycopy(buffer, from, res, 0, length);

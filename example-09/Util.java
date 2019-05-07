@@ -67,10 +67,4 @@ class Util {
 
         return copyOfRange(buf, 0, bufLen);
     }
-
-
-    public static byte[] responseDataOnly(byte[] data) {
-        return copyOfRange(data, 0, max(data.length-2, 0));
-    }
-
 }

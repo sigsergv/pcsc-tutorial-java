@@ -114,10 +114,6 @@ class Util {
         return copyOfRange(buf, 0, bufLen);
     }
 
-    public static byte[] responseDataOnly(byte[] data) {
-        return copyOfRange(data, 0, max(data.length-2, 0));
-    }
-
     public static String[] decodeAccessBits(byte b6, byte b7, byte b8) {
         String[] bits = {
             decodeAccessBits(b6, b7, b8, 0),

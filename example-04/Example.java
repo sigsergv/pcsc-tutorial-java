@@ -87,7 +87,7 @@ class Example {
                 System.out.printf("Response failed: %s%n", hexify(answer.getBytes()));
                 throw new InstructionFailedException();
             }
-            System.out.printf("Block data: %s%n", hexify(responseDataOnly(answer.getBytes())));
+            System.out.printf("Block data: %s%n", hexify(answer.getData()));
 
             // disconnect card
             card.disconnect(false);
@@ -107,10 +107,6 @@ class Example {
             sb.append(String.format("%02X ", b));
         }
         return sb.toString();
-    }
-
-    public static byte[] responseDataOnly(byte[] data) {
-        return copyOfRange(data, 0, max(data.length-2, 0));
     }
 
     public static byte[] toByteArray(String s) {

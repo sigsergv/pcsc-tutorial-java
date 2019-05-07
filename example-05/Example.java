@@ -124,7 +124,7 @@ class Example {
                             readBinaryCommand[3] = (byte)block;
                             answer = channel.transmit(new CommandAPDU(readBinaryCommand));
                             if (answer.getSW() == 0x9000) {
-                                blocksData.set(block, responseDataOnly(answer.getBytes()));
+                                blocksData.set(block, answer.getData());
                                 blocksKeys.set(block, "B: " + key);
                             }
                         }
@@ -143,7 +143,7 @@ class Example {
                             readBinaryCommand[3] = (byte)block;
                             answer = channel.transmit(new CommandAPDU(readBinaryCommand));
                             if (answer.getSW() == 0x9000) {
-                                blocksData.set(block, responseDataOnly(answer.getBytes()));
+                                blocksData.set(block, answer.getData());
                                 blocksKeys.set(block, "A: " + key);
                             }
                         }
@@ -245,10 +245,6 @@ class Example {
             sb.append(String.format("%02X ", b));
         }
         return sb.toString();
-    }
-
-    public static byte[] responseDataOnly(byte[] data) {
-        return copyOfRange(data, 0, max(data.length-2, 0));
     }
 
     public static byte[] toByteArray(String s) {

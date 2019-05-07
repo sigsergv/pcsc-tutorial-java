@@ -100,7 +100,7 @@ class IssueCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Failed to read trailer with Key A.");
             }
-            byte[] trailerData = Util.responseDataOnly(answer.getBytes());
+            byte[] trailerData = answer.getData();
             String[] accessBits = Util.decodeAccessBits(trailerData[6], trailerData[7], trailerData[8]);
             if (!accessBits[3].equals("001")) {
                 card.disconnect(false);

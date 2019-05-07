@@ -65,8 +65,7 @@ class Example {
             if (answer.getSW() != 0x9000) {
                 throw new InstructionFailedException();
             }
-            byte[] answerBytes = answer.getBytes();
-            byte[] uidBytes = copyOfRange(answerBytes, 0, max(answerBytes.length-2, 0));
+            byte[] uidBytes = answer.getData();
             System.out.printf("Card UID: %s%n", hexify(uidBytes));
 
             // disconnect card
