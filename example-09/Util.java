@@ -67,4 +67,19 @@ class Util {
 
         return copyOfRange(buf, 0, bufLen);
     }
+
+    public static String bytesToString(byte[] bytes) {
+        try {
+            return new String(bytes, "ISO-8859-1");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return "";
+        }
+    }
+
+    public static byte[] concatArrays(byte[] a, byte[] b) {
+        byte[] buffer = new byte[a.length + b.length];
+        System.arraycopy(a, 0, buffer, 0, a.length);
+        System.arraycopy(b, 0, buffer, a.length, b.length);
+        return buffer;
+    }
 }

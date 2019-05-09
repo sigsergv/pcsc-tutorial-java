@@ -63,23 +63,102 @@ public class Example {
             sw = answer.getSW();
             byte[] aid = null;
             if (sw == 0x9000) {
-                // take AID from FCI
+                System.out.println("Found PSE, extract AID");
                 byte[] PSEData = answer.getData();
                 aid = getAIDFromPSEFCI(channel, PSEData);
             } else if (sw == 0x6A82) {
                 // guess AID
+                System.out.println("PSE not found, guessing AID");
                 aid = guessAID(channel);
             } else {
                 throw new Util.CardOperationFailedException(String.format("PSE retrieval failed: 0x%04X", answer.getSW()));
             }
 
             if (aid == null) {
-                System.out.println("PSE not found.");
+                System.out.println("No payment AIDs found.");
+                card.disconnect(false);
+                return;
             } else {
                 System.out.printf("Found payment system: %s%n", Util.hexify(aid));
             }
 
-            // disconnect card
+            // Select application with name "aid"
+            //                                       CLS INS P1 P2  Le
+            byte[] selectCommand = Util.toByteArray("00  A4  04 00  07  00 00 00 00 00 00 00");
+            for (int i=0; i<7; i++) {
+                selectCommand[5+i] = aid[i];
+            }
+
+            answer = channel.transmit(new CommandAPDU(selectCommand));
+            if (answer.getSW() != 0x9000) {
+                System.out.printf("No EMV app found.");
+                card.disconnect(false);
+                return;
+            }
+            byte[] data = answer.getData();
+            byte[] pdolData = null;
+            try {
+                BerTlv fciTlv = BerTlv.parseBytes(data);
+                System.out.println(fciTlv);
+                BerTlv piTlv = fciTlv.getPart("A5");
+                BerTlv labelTlv = piTlv.getPart("50");
+                System.out.printf("Application name: %s%n", Util.bytesToString(labelTlv.getValue()));
+                BerTlv langTlv = piTlv.getPart("5F 2D");
+                if (langTlv != null) {
+                    System.out.printf("Language preference: %s%n", Util.bytesToString(langTlv.getValue()));
+                }
+                BerTlv pdolTlv = piTlv.getPart("9F 38");
+                if (pdolTlv != null) {
+                    pdolData = pdolTlv.getValue();
+                }
+            } catch (BerTlv.ConstraintException e) {
+                System.out.printf("Failed to parse SELECT response");
+            } catch (BerTlv.ParsingException e) {
+                System.out.printf("Failed to parse SELECT response");
+            }
+            
+            // Start financial transaction
+            // Send command "GET PROCESSING OPTIONS"
+            byte[] gpoCommand = Util.toByteArray("80 A8 00 00 00");
+            byte[] dolData = Util.toByteArray("83 00");
+
+            if (pdolData != null) {
+                // parse pdol data and extract total fields length
+                // ignore tags
+                boolean lengthByte = false;
+                int totalLength = 0;
+                for (byte b : pdolData) {
+                    if (lengthByte) {
+                        int x = b;
+                        if (x < 0) {
+                            x += 256;
+                        }
+                        totalLength += x;
+                        lengthByte = false;
+                        continue;
+                    }
+                    if ((b & 0x1F) != 0x1F) {
+                        // ^^^^^^ last five bits of "b" are not all 1s, so this byte is last one
+                        // in tag block, so consider next byte as field length
+                        lengthByte = true;
+                    }
+                }
+                byte[] t = new byte[totalLength];
+                dolData[1] = (byte)totalLength;  // remember, dolData = "83 00"
+                dolData = Util.concatArrays(dolData, t);
+            }
+
+            gpoCommand[4] = (byte)dolData.length;
+            gpoCommand = Util.concatArrays(gpoCommand, dolData);
+            gpoCommand = Util.concatArrays(gpoCommand, Util.toByteArray("00"));
+            System.out.printf("APDU: %s%n", Util.hexify(gpoCommand));
+            answer = channel.transmit(new CommandAPDU(gpoCommand));
+            if (answer.getSW() != 0x9000) {
+                System.out.printf("GET PROCESSING OPTIONS failed: %04X%n", answer.getSW());
+                card.disconnect(false);
+                return;
+            }
+
             card.disconnect(false);
 
         } catch (Util.CardOperationFailedException e) {
@@ -104,7 +183,7 @@ public class Example {
                 throw new Util.CardOperationFailedException("Cannot find EMV block in PSE FCI");
             }
 
-            // piTlv now contains data specified in EMV book 1 spec,
+            // piTlv now contains data specified in EMV_v4.3 book 1 spec,
             // section "11.3.4 Data Field Returned in the Response Message"
             BerTlv sfiTlv = piTlv.getPart("88");
             if (sfiTlv == null) {
@@ -143,7 +222,7 @@ public class Example {
                 if (record.length != 0) {
                     BerTlv psd = BerTlv.parseBytes(record);
                     // psd must have tag "70"
-                    // see EMV book 1, section "12.2.3 Coding of a Payment System Directory"
+                    // see EMV_v4.3 book 1, section "12.2.3 Coding of a Payment System Directory"
                     if (!java.util.Arrays.equals(psd.getTag(), Util.toByteArray("70"))) {
                         throw new Util.CardOperationFailedException("Cannot find PSD record");
                     }
@@ -168,7 +247,32 @@ public class Example {
         }
     }
 
-    private final static byte[] guessAID(CardChannel channel) {
-        return null;
+    private final static byte[] guessAID(CardChannel channel)
+        throws CardException
+    {
+        ArrayList<byte[]> candidateAIDs = new ArrayList<byte[]>(5);
+
+        candidateAIDs.add(Util.toByteArray("A0 00 00 00 03 20 10"));  // Visa Electron
+        candidateAIDs.add(Util.toByteArray("A0 00 00 00 03 10 10"));  // Visa Classic
+        candidateAIDs.add(Util.toByteArray("A0 00 00 00 04 10 10"));  // Mastercard
+
+        //                                          CLS INS P1 P2  Le
+        byte[] selectADFCommand = Util.toByteArray("00  A4  04 00  07  00 00 00 00 00 00 00");
+        ResponseAPDU answer;
+        byte[] foundAID = null;
+
+        for (byte[] aid : candidateAIDs) {
+            // copy AID to command array
+            for (int i=0; i<7; i++) {
+                selectADFCommand[5+i] = aid[i];
+            }
+            answer = channel.transmit(new CommandAPDU(selectADFCommand));
+            if (answer.getSW() == 0x9000) {
+                foundAID = aid;
+                break;
+            }
+        }
+
+        return foundAID;
     }
 }
