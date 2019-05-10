@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.smartcardio.*;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class Example {
     public static void main(String[] args) {
@@ -189,7 +190,7 @@ public class Example {
             System.out.printf("  Issuer authentication is supported: %s%n", (aipData[0] & 0x4)==0 ? "no" : "yes");
             System.out.printf("  CDA supported: %s%n", (aipData[0] & 0x1)==0 ? "no" : "yes");
 
-            // System.out.printf("AIP: %s, AFL: %s%n", Util.hexify(aipData), Util.hexify(aflData));
+            // now read AFL points to
             ArrayList<BerTlv> readObjects = new ArrayList<BerTlv>(10);
             int aflPartsCount = aflData.length / 4;
             for (int i=0; i<aflPartsCount; i++) {
@@ -221,7 +222,6 @@ public class Example {
                         continue;
                     }
                     byte[] recordData = answer.getData();
-                    // System.out.printf("SFI=%d, record=%d, Data=%s%n", sfi, j, Util.hexify(recordData));
                     try {
                         BerTlv recordTlv = BerTlv.parseBytes(recordData);
                         if (!recordTlv.tagEquals("70")) {
@@ -234,7 +234,6 @@ public class Example {
                         } catch (BerTlv.ConstraintException e) {
                             System.out.println("BER-TLV error");
                         }
-                        // System.out.printf("SFI=%d, record=%d, Data=%s%n", sfi, j, recordTlv);
 
                     } catch (BerTlv.ParsingException e) {
                         System.out.printf("Failed to parse data: %s%n%s%n", e, Util.hexify(recordData));
@@ -243,14 +242,12 @@ public class Example {
             }
 
             System.out.println("> AFL Data");
+            HashMap<String, String> mappedValues = Util.mapDataObjects(readObjects);
+
             for (BerTlv b : readObjects) {
-                if (b.getEncoding() == BerTlv.Encoding.PRIMITIVE) {
-                    System.out.printf("%s: %s%n", Util.hexify(b.getTag()), Util.hexify(b.getValue()));
-                } else {
-                    System.out.printf("CONSTRUCTED TAG %s%n", Util.hexify(b.getTag()));
-                }
+                String tagString = Util.hexify(b.getTag());
+                System.out.printf("  %s%n", mappedValues.get(tagString));
             }
-            // System.out.printf("Objects read: %d%n", readObjects.size());
 
             card.disconnect(false);
 
