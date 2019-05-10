@@ -28,6 +28,8 @@
 
 import java.util.List;
 import javax.smartcardio.*;
+import java.util.ArrayList;
+
 
 class Example {
     public static class TerminalNotFoundException extends Exception {}
@@ -67,10 +69,10 @@ class Example {
     }
 
     public static String hexify(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
+        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
         for (byte b : bytes) {
-            sb.append(String.format("%02X ", b));
+            bytesStrings.add(String.format("%02X", b));
         }
-        return sb.toString();
+        return String.join(" ", bytesStrings);
     }
 }

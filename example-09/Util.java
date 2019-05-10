@@ -27,6 +27,7 @@
 
 import static java.util.Arrays.copyOfRange;
 import static java.lang.Math.max;
+import java.util.ArrayList;
 
 // local utility class
 class Util {
@@ -38,11 +39,11 @@ class Util {
         }
     }
     public static String hexify(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
+        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
         for (byte b : bytes) {
-            sb.append(String.format("%02X ", b));
+            bytesStrings.add(String.format("%02X", b));
         }
-        return sb.toString();
+        return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {
@@ -82,4 +83,11 @@ class Util {
         System.arraycopy(b, 0, buffer, a.length, b.length);
         return buffer;
     }
+
+    public static byte[] copyArray(byte[] buffer, int from, int length) {
+        byte[] res = new byte[length];
+        System.arraycopy(buffer, from, res, 0, length);
+        return res;
+    }
+
 }

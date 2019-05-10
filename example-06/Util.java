@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Properties;
 import static java.util.Arrays.copyOfRange;
-// import static java.util.Arrays.fill;
+import java.util.ArrayList;
 import static java.lang.Math.max;
 
 // local utility class
@@ -84,11 +84,11 @@ class Util {
     }
 
     public static String hexify(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
+        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
         for (byte b : bytes) {
-            sb.append(String.format("%02X ", b));
+            bytesStrings.add(String.format("%02X", b));
         }
-        return sb.toString();
+        return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {

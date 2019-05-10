@@ -55,7 +55,7 @@ class BerTlv {
     }
 
     private final byte[] tag;
-    private final Encoding tagEncoding;
+    private final Encoding encoding;
     private final Class tagClass;
 
     // primitive value
@@ -73,9 +73,9 @@ class BerTlv {
         this.parts = parts;
         this.value = null;
 
-        this.tagEncoding = Encoding.CONSTRUCTED;
+        this.encoding = Encoding.CONSTRUCTED;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.tagEncoding) {
+        if (getEncodingFromTag(tag) != this.encoding) {
             throw new ConstraintException("Incorrect tag encoding");
         }
     }
@@ -89,9 +89,9 @@ class BerTlv {
         this.parts = null;
         this.value = value;
 
-        this.tagEncoding = Encoding.PRIMITIVE;
+        this.encoding = Encoding.PRIMITIVE;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.tagEncoding) {
+        if (getEncodingFromTag(tag) != this.encoding) {
             throw new ConstraintException("Incorrect tag encoding");
         }
     }
@@ -100,13 +100,16 @@ class BerTlv {
         return tag;
     }
 
-    public byte[] getValue()
-        throws ConstraintException
-    {
-        if (this.tagEncoding == Encoding.CONSTRUCTED) {
-            throw new ConstraintException("Incorrect tag encoding for getValue method");
-        }
+    public Encoding getEncoding() {
+        return encoding;
+    }
+
+    public byte[] getValue() {
         return value;
+    }
+
+    public boolean tagEquals(String tagHex) {
+        return java.util.Arrays.equals(getTag(), Util.toByteArray(tagHex));
     }
 
 
@@ -158,7 +161,7 @@ class BerTlv {
     public BerTlv getPart(byte[] tag)
         throws ConstraintException
     {
-        if (this.tagEncoding != Encoding.CONSTRUCTED) {
+        if (this.encoding != Encoding.CONSTRUCTED) {
             throw new ConstraintException("Only CONSTRUCTED objects have parts.");
         }
         BerTlv part = null;
@@ -179,7 +182,7 @@ class BerTlv {
     public BerTlv[] getParts()
         throws ConstraintException
     {
-        if (this.tagEncoding != Encoding.CONSTRUCTED) {
+        if (this.encoding != Encoding.CONSTRUCTED) {
             throw new ConstraintException("Only CONSTRUCTED objects have parts.");
         }
         BerTlv[] res = new BerTlv[parts.size()];
@@ -217,33 +220,31 @@ class BerTlv {
                     }
                 }
             }
-            tagBytes = copy(bytes, 0, p+1);
+            tagBytes = Util.copyArray(bytes, 0, p+1);
 
             // extract length bytes and length
             p++;
             byte[] lengthBytes = new byte[4];
             int lengthBytesLen = 1;
+            int length = 0;
 
             v = (bytes[p] >> 7) & 1;
             if (v == 0) {
-                lengthBytes[0] = (byte)(bytes[p] & 0x7F);
+                length = bytes[p] & 0x7F;
             } else {
-                lengthBytesLen = bytes[p] & 0x7F;
+                int localLen = bytes[p] & 0x7F;
+                lengthBytesLen += localLen;
                 if (lengthBytesLen > 4) {
-                    throw new ParsingException("Length value is too large");
+                    throw new ParsingException(String.format("Length value is too large: %d, byte: %02X", lengthBytesLen, bytes[p]));
                 }
-                for (int i=0; i<lengthBytesLen; i++) {
-                    lengthBytes[i] = bytes[p+i+1];
+                for (int i=0; i<localLen; i++) {
+                    int x = bytes[p+i+1];
+                    if (x < 0) {
+                        // we use this code because all Java types are signed
+                        x += 256;
+                    }
+                    length = length*256 + x;
                 }
-            }
-            int length = 0;
-            for (int i=0; i<lengthBytesLen; i++) {
-                int x = lengthBytes[i];
-                if (x < 0) {
-                    // we use this code because all Java types are signed
-                    x += 256;
-                }
-                length = length*256 + x;
             }
             p += lengthBytesLen;
 
@@ -252,20 +253,20 @@ class BerTlv {
                 // CONSTRUCTED
                 // parse chunks of data block until it depletes
                 ArrayList<BerTlv> parts = new ArrayList<BerTlv>(5);
-                byte[] remains = copy(bytes, p, length);
+                byte[] remains = Util.copyArray(bytes, p, length);
                 while (true) {
                     Pair chunk = parseChunk(remains);
                     parts.add(chunk.value);
                     if (remains.length == chunk.size) {
                         break;
                     }
-                    remains = copy(remains, chunk.size, remains.length-chunk.size);
+                    remains = Util.copyArray(remains, chunk.size, remains.length-chunk.size);
                 }
 
                 t = new BerTlv(tagBytes, parts);
             } else {
                 // PRIMITIVE
-                t = new BerTlv(tagBytes, copy(bytes, p, length));
+                t = new BerTlv(tagBytes, Util.copyArray(bytes, p, length));
             }
             Pair pair = new Pair(p+length, t);
             return pair;
@@ -285,7 +286,7 @@ class BerTlv {
     public String toString() {
         String s;
 
-        if (tagEncoding == Encoding.PRIMITIVE) {
+        if (encoding == Encoding.PRIMITIVE) {
             s = String.format("TAG:   %s(PRIMITIVE)%nVALUE: %s", 
                 Util.hexify(tag), 
                 Util.hexify(value));
@@ -316,19 +317,6 @@ class BerTlv {
         }
     }
 
-    /**
-     * Local method to copy subarray into a new array.
-     * 
-     * @param  buffer [description]
-     * @param  from   [description]
-     * @param  length [description]
-     * @return        [description]
-     */
-    private static byte[] copy(byte[] buffer, int from, int length) {
-        byte[] res = new byte[length];
-        System.arraycopy(buffer, from, res, 0, length);
-        return res;
-    }
 
     private static Encoding getEncodingFromTag(byte[] tag) {
         if ((tag[0] >> 5 & 1) == 1) {
