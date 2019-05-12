@@ -59,7 +59,7 @@ public class Example {
             int sw;
 
             // Select PSE first
-            //                                   CLA  INS  P1 P2   Lc  DATA
+            //                                          CLA  INS  P1 P2   Lc  DATA
             byte[] selectPSECommand = Util.toByteArray("00   A4   04 00   0E  31 50 41 59 2E 53 59 53 2E 44 44 46 30 31");
             answer = channel.transmit(new CommandAPDU(selectPSECommand));
             sw = answer.getSW();
