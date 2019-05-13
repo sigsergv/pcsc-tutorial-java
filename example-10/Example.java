@@ -195,7 +195,7 @@ public class Example {
                     int objLen = historicalBytes[p] & 0xF;
                     int objTag = ((historicalBytes[p] >> 4) & 0xF) + 0x40;
                     byte[] objData = Util.copyArray(historicalBytes, p+1, objLen);
-                    System.out.printf("  TAG: %02X; DATA: %s%n", objTag, Util.hexify(objData));
+                    printHistoricalBytesValue(objTag, objData);
                     p += objLen + 1;
                 }
             } else if (historicalBytes[0] == 0x0) {
@@ -212,10 +212,14 @@ public class Example {
                     int objLen = historicalBytes[p] & 0xF;
                     int objTag = ((historicalBytes[p] >> 4) & 0xF) + 0x40;
                     byte[] objData = Util.copyArray(historicalBytes, p+1, objLen);
-                    System.out.printf("  TAG: %02X; DATA: %s%n", objTag, Util.hexify(objData));
+                    printHistoricalBytesValue(objTag, objData);
                     p += objLen + 1;
                 }
-                System.out.printf("  Status indicator bytes: %s%n", Util.hexify(Util.copyArray(historicalBytes, historicalBytes.length - 3, 3)));
+                System.out.println("  Status indicator bytes:");
+                for (String x: getStatusIndicatorBytes(Util.copyArray(historicalBytes, historicalBytes.length - 3, 3))) {
+                    System.out.printf("    %s%n", x);
+                }
+                // System.out.printf("  Status indicator bytes: %s%n", Util.hexify(Util.copyArray(historicalBytes, historicalBytes.length - 3, 3)));
             } else if (historicalBytes[0] == 0x10) {
                 // ???
             } else {
@@ -229,5 +233,106 @@ public class Example {
         } catch (ATRParsingException e) {
             System.out.printf("Failed to parse ATR: %s%n", e.toString());
         }
+    }
+
+    private static void printHistoricalBytesValue(int tag, byte[] value) {
+        System.out.printf("  TAG: %02X; DATA: %s%n", tag, Util.hexify(value));
+
+        // print additional details
+        byte b;
+        String s = "";
+        switch (tag) {
+        case 0x41:
+            System.out.println("    Country code");
+            break;
+        case 0x42:
+            break;
+        case 0x43:
+            b = value[0];
+            System.out.println("    Card service data:");
+            System.out.printf("      Application selection by full DF name: %s%n", intToBoolString(b & 0x80));
+            System.out.printf("      Application selection by partial DF name: %s%n", intToBoolString(b & 0x40));
+            System.out.printf("      BER-TLV data objects in EF.DIR: %s%n", intToBoolString(b & 0x20));
+            System.out.printf("      BER-TLV data objects in EF.ATR: %s%n", intToBoolString(b & 0x10));
+            switch ((b >> 1) & 0x7) {
+            case 0x4:
+                s = "by the READ BINARY command (transparent structure)";
+                break;
+            case 0:
+                s = "by the READ RECORD (S) command (record structure)";
+                break;
+            case 0x2:
+                s = "by the GET DATA command (TLV structure)";
+                break;
+            } 
+            System.out.printf("      EF.DIR and EF.ATR access services: %s%n", s);
+            if ((b & 1) == 0) {
+                System.out.println("      Card with MF");
+            } else {
+                System.out.println("      Card without MF");
+            }
+            break;
+        case 0x44:
+            System.out.println("    Initial access data");
+            break;
+        case 0x45:
+            System.out.println("    Card issuer's data");
+            break;
+        case 0x46:
+            System.out.println("    Pre-issuing data");
+            break;
+        case 0x47:
+            System.out.println("    Card capabilities");
+            break;
+        case 0x48:
+            System.out.println("    Status information:");
+            for (String x: getStatusIndicatorBytes(value)) {
+                System.out.printf("      %s%n", x);
+            }
+            break;
+        case 0x4D:
+            System.out.println("    Extended header list");
+            break;
+        case 0x4F:
+            System.out.println("    Application identifier");
+            break;
+        }
+    }
+
+    private static String intToBoolString(int i) {
+        if (i == 0) {
+            return "no";
+        } else {
+            return "yes";
+        }
+    }
+
+    private static String[] getStatusIndicatorBytes(byte[] value) {
+        ArrayList<String> items = new ArrayList<String>(2);
+
+        if (value.length == 1 || value.length == 3) {
+            byte b = value[0];
+            String s = "";
+            if (b == 0) {
+                s = "No information given";
+            } else if (b == 1) {
+                s = "Creation state";
+            } else if (b == 3) {
+                s = "Initialisation state";
+            } else if ((b & 0x5) == 0x5) {
+                s = "Operational state (activated)";
+            } else if ((b & 0x5) == 0x4) {
+                s = "Operational state (deactivated)";
+            } else if ((b & 0xC) == 0xC) {
+                s = "Termination state";
+            } else if ((b & 0xF0) != 0) {
+                s = "Proprietary";
+            }
+            items.add(String.format("LCS (life cycle status): %s", s));
+        }
+        if (value.length == 2 || value.length == 3) {
+            items.add(String.format("Status word: %s", Util.hexify(Util.copyArray(value, value.length-2, 2))));
+        }
+        return items.toArray(new String[0]);
     }
 }
