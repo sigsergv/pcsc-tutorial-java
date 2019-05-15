@@ -283,6 +283,9 @@ public class Example {
             break;
         case 0x47:
             System.out.println("    Card capabilities");
+            for (String x: getCapabilities(value)) {
+                System.out.printf("      %s%n", x);
+            }
             break;
         case 0x48:
             System.out.println("    Status information:");
@@ -335,4 +338,97 @@ public class Example {
         }
         return items.toArray(new String[0]);
     }
+
+    private static String[] getCapabilities(byte[] value) {
+        ArrayList<String> items = new ArrayList<String>(5);
+        String s;
+        byte b;
+
+        if (value.length >= 1) {
+            b = value[0];
+            ArrayList<String> sub = new ArrayList<String>(5);
+            if ((b & 0x80) != 0) {
+                sub.add("by full DF name");
+            }
+            if ((b & 0x40) != 0) {
+                sub.add("by partial DF name");
+            }
+            if ((b & 0x20) != 0) {
+                sub.add("by path");
+            }
+            if ((b & 0x10) != 0) {
+                sub.add("by file identifier");
+            }
+            if ((b & 0x8) != 0) {
+                sub.add("Implicit DF selection");
+            }
+            s = String.format(s = "DF selection: %s", String.join(", ", sub));
+            items.add(s);
+
+            items.add(String.format("Short EF identifier supported: %s", intToBoolString(b & 0x4)));
+            items.add(String.format("Record number supported: %s", intToBoolString(b & 0x2)));
+            items.add(String.format("Record identifier supported: %s", intToBoolString(b & 0x1)));
+        }
+
+        if (value.length >= 2) {
+            b = value[1];
+            items.add(String.format("EFs of TLV structure supported: %s", intToBoolString(b & 0x80)));
+
+            s = "Behaviour of write functions: ";
+            switch ((b >> 5) & 0x3) {
+            case 0:
+                s += "One-time write";
+                break;
+            case 1:
+                s += "Proprietary";
+                break;
+            case 2:
+                s += "Write OR";
+                break;
+            case 3:
+                s += "Write AND";
+                break;
+            }
+            items.add(s);
+
+            s = "Value 'FF' for the first byte of BER-TLV tag fields: ";
+            if ((b & 0x10) == 0x10) {
+                s += "valid";
+            } else {
+                s += "invalid";
+            }
+            items.add(s);
+
+            b = (byte)(b & 0xF);
+            items.add(String.format("Data unit size in quartets: %d", b));
+        }
+
+        if (value.length >= 3) {
+            b = value[2];
+            items.add(String.format("Commands chaining: %s", intToBoolString(b & 0x80)));
+            items.add(String.format("Extended Lc and Le fields: %s", intToBoolString(b & 0x40)));
+
+            s = "Logical channel number assignment: ";
+
+            switch ((b >> 3) & 0x3) {
+            case 0x0:
+                s += "No logical channel";
+                break;
+            case 0x2:
+                s += "by the card";
+                break;
+            case 0x3:
+                s += "by the interface device";
+                break;
+            }
+            items.add(s);
+
+            s = String.format("Maximum number of logical channels: %d", 
+                4*((b>>2)&1) + 2*((b>>1)&1) + (b&1) + 1);
+            items.add(s);
+        }
+        return items.toArray(new String[0]);
+    }
+
+
 }
