@@ -62,7 +62,8 @@ class Checkout {
                 terminal.waitForCardPresent(0);
 
                 try {
-                    Card card = terminal.connect("T=1");
+                    // establish a connection to the card using autoselected protocol
+                    Card card = terminal.connect("*");
                     CardChannel channel = card.getBasicChannel();
 
                     // load production Key B to cell 00

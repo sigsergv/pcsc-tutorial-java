@@ -50,7 +50,8 @@ class RevokeCard {
             }
             terminal.waitForCardPresent(0);
 
-            Card card = terminal.connect("T=1");
+            // establish a connection to the card using autoselected protocol
+            Card card = terminal.connect("*");
             CardChannel channel = card.getBasicChannel();
 
             byte[] authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");

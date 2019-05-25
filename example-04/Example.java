@@ -53,8 +53,8 @@ class Example {
             // wait for card, indefinitely until card appears
             terminal.waitForCardPresent(0);
 
-            // establish a connection to the card using protocol T=1
-            Card card = terminal.connect("T=1");
+            // establish a connection to the card using autoselected protocol
+            Card card = terminal.connect("*");
 
             // obtain logical channel
             CardChannel channel = card.getBasicChannel();
