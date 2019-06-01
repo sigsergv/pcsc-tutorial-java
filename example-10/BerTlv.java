@@ -29,13 +29,13 @@ import java.util.List;
 import java.util.ArrayList;
 
 
-class BerTlv {
+public class BerTlv {
     public enum Encoding {
         PRIMITIVE,
         CONSTRUCTED
     }
 
-    public enum Class {
+    public enum TagClass {
         UNIVERSAL,
         APPLICATION,
         PRIVATE,
@@ -48,15 +48,9 @@ class BerTlv {
         }
     }
 
-    public static class ConstraintException extends Exception {
-        public ConstraintException(String message) {
-            super(message);
-        }
-    }
-
     private final byte[] tag;
     private final Encoding encoding;
-    private final Class tagClass;
+    private final TagClass tagClass;
 
     // primitive value
     private final byte[] value;
@@ -66,34 +60,23 @@ class BerTlv {
 
 
     // constructed value constructor
-    public BerTlv(byte[] tag, List<BerTlv> parts)
-        throws ConstraintException
-    {
+    public BerTlv(byte[] tag, List<BerTlv> parts) {
         this.tag = tag;
         this.parts = parts;
         this.value = null;
 
         this.encoding = Encoding.CONSTRUCTED;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.encoding) {
-            throw new ConstraintException("Incorrect tag encoding");
-        }
     }
 
-
     // primitive value constructor
-    public BerTlv(byte[] tag, byte[] value)
-        throws ConstraintException
-    {
+    public BerTlv(byte[] tag, byte[] value) {
         this.tag = tag;
         this.parts = null;
         this.value = value;
 
         this.encoding = Encoding.PRIMITIVE;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.encoding) {
-            throw new ConstraintException("Incorrect tag encoding");
-        }
     }
 
     public byte[] getTag() {
@@ -113,17 +96,17 @@ class BerTlv {
     }
 
 
-    /**
-     * Add new BerTlv part to constructed
-     * 
-     * @param  part [description]
-     * @return      [description]
-     */
-    public BerTlv addPart(BerTlv part)
-        throws ConstraintException
-    {
-        return this;
-    }
+    // /**
+    //  * Add new BerTlv part to constructed
+    //  * 
+    //  * @param  part [description]
+    //  * @return      [description]
+    //  */
+    // public BerTlv addPart(BerTlv part)
+    //     throws ConstraintException
+    // {
+    //     return this;
+    // }
 
 
     /**
@@ -144,11 +127,8 @@ class BerTlv {
      * Get first part tagged with tag that has binary representation tagBytesRepr
      * @param  tagBytesRepr        [description]
      * @return                     [description]
-     * @throws ConstraintException [description]
      */
-    public BerTlv getPart(String tagBytesRepr)
-        throws ConstraintException
-    {
+    public BerTlv getPart(String tagBytesRepr) {
         return getPart(Util.toByteArray(tagBytesRepr));
     }
 
@@ -156,13 +136,11 @@ class BerTlv {
      * Get first part tagged with tag tag.
      * @param  tag                 [description]
      * @return                     [description]
-     * @throws ConstraintException [description]
      */
-    public BerTlv getPart(byte[] tag)
-        throws ConstraintException
-    {
+    public BerTlv getPart(byte[] tag) {
         if (this.encoding != Encoding.CONSTRUCTED) {
-            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
+            System.err.printf("Trying to return part of PRIMITIVE BER-TLV object.");
+            return null;
         }
         BerTlv part = null;
         for (BerTlv p : parts) {
@@ -179,12 +157,7 @@ class BerTlv {
      * Get all parts
      * @return [description]
      */
-    public BerTlv[] getParts()
-        throws ConstraintException
-    {
-        if (this.encoding != Encoding.CONSTRUCTED) {
-            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
-        }
+    public BerTlv[] getParts() {
         BerTlv[] res = new BerTlv[parts.size()];
         return parts.toArray(res);
     }
@@ -240,7 +213,6 @@ class BerTlv {
                 for (int i=0; i<localLen; i++) {
                     int x = bytes[p+i+1];
                     if (x < 0) {
-                        // we use this code because all Java types are signed
                         x += 256;
                     }
                     length = length*256 + x;
@@ -271,8 +243,6 @@ class BerTlv {
             Pair pair = new Pair(p+length, t);
             return pair;
 
-        } catch (ConstraintException e) {
-            throw new ParsingException("Inconsistent data");
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new ParsingException("Premature end of bytes");
         }
@@ -287,7 +257,7 @@ class BerTlv {
         String s;
 
         if (encoding == Encoding.PRIMITIVE) {
-            s = String.format("TAG:   %s(PRIMITIVE)%nVALUE: %s", 
+            s = String.format("TAG: %s (PRIMITIVE)%nVALUE: %s", 
                 Util.hexify(tag), 
                 Util.hexify(value));
         } else {
@@ -298,11 +268,19 @@ class BerTlv {
             }
             String partStringsJoined = String.join("\n", partStrings);
 
-            s = String.format("TAG:   %s(CONSTRUCTED)%n%s", 
+            s = String.format("TAG: %s (CONSTRUCTED)%n%s", 
                 Util.hexify(tag), 
                 partStringsJoined);
         }
         return s;
+    }
+
+    public boolean isPrimitive() {
+        return encoding == Encoding.PRIMITIVE;
+    }
+
+    public boolean isConstructed() {
+        return encoding == Encoding.CONSTRUCTED;
     }
 
     /**
@@ -326,13 +304,13 @@ class BerTlv {
         }
     }
 
-    private static Class getClassFromTag(byte[] tag) {
+    private static TagClass getClassFromTag(byte[] tag) {
 
         switch ((tag[0] >> 6) & 3) {
-            case 0: return Class.UNIVERSAL;
-            case 1: return Class.APPLICATION;
-            case 2: return Class.PRIVATE;
-            default: return Class.CONTEXT_SPECIFIC;
+            case 0: return TagClass.UNIVERSAL;
+            case 1: return TagClass.APPLICATION;
+            case 2: return TagClass.PRIVATE;
+            default: return TagClass.CONTEXT_SPECIFIC;
         }
     }
 

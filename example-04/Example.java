@@ -26,7 +26,6 @@
  */
 
 
-import java.util.List;
 import javax.smartcardio.*;
 import static java.util.Arrays.copyOfRange;
 import static java.lang.Math.max;
@@ -38,15 +37,15 @@ class Example {
 
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -54,12 +53,11 @@ class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
             ResponseAPDU answer;
-
             byte[] command;
 
             // 1. load key
@@ -103,26 +101,26 @@ class Example {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {
-        int len = s.length();
-        byte[] buf = new byte[len/2];
+        var len = s.length();
+        var buf = new byte[len/2];
         int bufLen = 0;
         int i = 0;
         
         while (i < len) {
-            char c1 = s.charAt(i);
+            var c1 = s.charAt(i);
             i++;
             if (c1 == ' ') {
                 continue;
             }
-            char c2 = s.charAt(i);
+            var c2 = s.charAt(i);
             i++;
 
             byte d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));

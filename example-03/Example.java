@@ -28,8 +28,6 @@
 
 import java.util.List;
 import javax.smartcardio.*;
-import static java.util.Arrays.copyOfRange;
-import static java.lang.Math.max;
 import java.util.ArrayList;
 
 class Example {
@@ -39,15 +37,15 @@ class Example {
 
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -55,10 +53,10 @@ class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             // execute command
             int[] command = {0xFF, 0xCA, 0x00, 0x00, 0x00};
@@ -66,7 +64,7 @@ class Example {
             if (answer.getSW() != 0x9000) {
                 throw new InstructionFailedException();
             }
-            byte[] uidBytes = answer.getData();
+            var uidBytes = answer.getData();
             System.out.printf("Card UID: %s%n", hexify(uidBytes));
 
             // disconnect card
@@ -84,8 +82,8 @@ class Example {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
@@ -93,11 +91,9 @@ class Example {
 
     public static byte[] toByteArray(int[] list)
         throws ByteCastException {
-        int s = list.length;
-        byte[] buf = new byte[s];
-        int i;
-
-        for (i=0; i<s; i++) {
+        var s = list.length;
+        var buf = new byte[s];
+        for (int i=0; i<s; i++) {
             if (i < 0 || i > 255) {
                 throw new ByteCastException();
             }

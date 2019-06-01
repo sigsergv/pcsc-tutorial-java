@@ -34,15 +34,15 @@ import java.util.HashMap;
 public class Example {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -50,23 +50,23 @@ public class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             ResponseAPDU answer;
             int sw;
 
             // Select PSE first
             //                                          CLA  INS  P1 P2   Lc  DATA
-            byte[] selectPSECommand = Util.toByteArray("00   A4   04 00   0E  31 50 41 59 2E 53 59 53 2E 44 44 46 30 31");
+            var selectPSECommand = Util.toByteArray("00   A4   04 00   0E  31 50 41 59 2E 53 59 53 2E 44 44 46 30 31");
             answer = channel.transmit(new CommandAPDU(selectPSECommand));
             sw = answer.getSW();
             byte[] aid = null;
             if (sw == 0x9000) {
                 System.out.println("Found PSE, extract AID");
-                byte[] PSEData = answer.getData();
+                var PSEData = answer.getData();
                 aid = getAIDFromPSEFCI(channel, PSEData);
             } else if (sw == 0x6A82) {
                 // guess AID
@@ -87,7 +87,7 @@ public class Example {
 
             // Select application with name "aid"
             //                                       CLS INS P1 P2  Le
-            byte[] selectCommand = Util.toByteArray("00  A4  04 00  07  00 00 00 00 00 00 00");
+            var selectCommand = Util.toByteArray("00  A4  04 00  07  00 00 00 00 00 00 00");
             for (int i=0; i<7; i++) {
                 selectCommand[5+i] = aid[i];
             }
@@ -98,18 +98,18 @@ public class Example {
                 throw new Util.CardOperationFailedException("No EMV app found.");
             }
 
-            byte[] data = answer.getData();
+            var data = answer.getData();
             byte[] pdolData = null;
             try {
-                BerTlv fciTlv = BerTlv.parseBytes(data);
-                BerTlv piTlv = fciTlv.getPart("A5");
-                BerTlv labelTlv = piTlv.getPart("50");
+                var fciTlv = BerTlv.parseBytes(data);
+                var piTlv = fciTlv.getPart("A5");
+                var labelTlv = piTlv.getPart("50");
                 System.out.printf("Application name: %s%n", Util.bytesToString(labelTlv.getValue()));
-                BerTlv langTlv = piTlv.getPart("5F 2D");
+                var langTlv = piTlv.getPart("5F 2D");
                 if (langTlv != null) {
                     System.out.printf("Language preference: %s%n", Util.bytesToString(langTlv.getValue()));
                 }
-                BerTlv pdolTlv = piTlv.getPart("9F 38");
+                var pdolTlv = piTlv.getPart("9F 38");
                 if (pdolTlv != null) {
                     pdolData = pdolTlv.getValue();
                 }
@@ -123,13 +123,13 @@ public class Example {
             
             // Start financial transaction
             // prepare dolData
-            byte[] dolData = Util.toByteArray("83 00");
+            var dolData = Util.toByteArray("83 00");
             if (pdolData != null) {
                 // parse pdol data and extract total fields length
                 // ignore tags
-                boolean lengthByte = false;
+                var lengthByte = false;
                 int totalLength = 0;
-                for (byte b : pdolData) {
+                for (var b : pdolData) {
                     if (lengthByte) {
                         int x = b;
                         if (x < 0) {
@@ -145,13 +145,13 @@ public class Example {
                         lengthByte = true;
                     }
                 }
-                byte[] t = new byte[totalLength];
+                var t = new byte[totalLength];
                 dolData[1] = (byte)totalLength;  // remember, dolData = "83 00"
                 dolData = Util.concatArrays(dolData, t);
             }
 
             // Send command "GET PROCESSING OPTIONS"
-            byte[] gpoCommand = Util.toByteArray("80 A8 00 00 00");
+            var gpoCommand = Util.toByteArray("80 A8 00 00 00");
             gpoCommand[4] = (byte)dolData.length;
             gpoCommand = Util.concatArrays(gpoCommand, dolData);
             gpoCommand = Util.concatArrays(gpoCommand, Util.toByteArray("00"));
@@ -165,12 +165,12 @@ public class Example {
             byte[] aipData = null;
             byte[] aflData = null;
             try {
-                BerTlv gpoTlv = BerTlv.parseBytes(data);
+                var gpoTlv = BerTlv.parseBytes(data);
                 if (gpoTlv.tagEquals("77")) {
                     aipData = gpoTlv.getPart("82").getValue();
                     aflData = gpoTlv.getPart("94").getValue();
                 } else if (gpoTlv.tagEquals("80")) {
-                    byte[] gpoData = gpoTlv.getValue();
+                    var gpoData = gpoTlv.getValue();
                     aipData = Util.copyArray(gpoData, 0, 2);
                     aflData = Util.copyArray(gpoData, 2, gpoData.length-2);
                 } else {
@@ -191,24 +191,24 @@ public class Example {
             System.out.printf("  CDA supported: %s%n", (aipData[0] & 0x1)==0 ? "no" : "yes");
 
             // now read AFL points to
-            ArrayList<BerTlv> readObjects = new ArrayList<BerTlv>(10);
+            var readObjects = new ArrayList<BerTlv>(10);
             int aflPartsCount = aflData.length / 4;
             for (int i=0; i<aflPartsCount; i++) {
                 int startByte = i*4;
 
-                byte sfi = (byte)(aflData[startByte] >> 3);
-                int firstSfiRec = aflData[startByte + 1];
+                var sfi = (byte)(aflData[startByte] >> 3);
+                var firstSfiRec = aflData[startByte + 1];
                 int lastSfiRec = aflData[startByte + 2];
                 int offlineAuthRecNumber = aflData[startByte + 3];  // we don't use it
 
                 //                                           CLA INS P1 P2 Le
-                byte[] readRecordCommand = Util.toByteArray("00  B2  00 00 00");
+                var readRecordCommand = Util.toByteArray("00  B2  00 00 00");
                 for (int j=firstSfiRec; j<=lastSfiRec; j++) {
                     // set Le=0
                     readRecordCommand[4] = 0;
                     // set P1
                     readRecordCommand[2] = (byte)j;
-                    byte p2 = (byte)((sfi << 3) | 4);
+                    var p2 = (byte)((sfi << 3) | 4);
                     readRecordCommand[3] = p2;
                     answer = channel.transmit(new CommandAPDU(readRecordCommand));
                     if (answer.getSW1() == 0x6C) {
@@ -221,9 +221,9 @@ public class Example {
                         System.out.printf("Failed to read record %d from SFI=%d", j, sfi);
                         continue;
                     }
-                    byte[] recordData = answer.getData();
+                    var recordData = answer.getData();
                     try {
-                        BerTlv recordTlv = BerTlv.parseBytes(recordData);
+                        var recordTlv = BerTlv.parseBytes(recordData);
                         if (!recordTlv.tagEquals("70")) {
                             continue;
                         }
@@ -242,10 +242,10 @@ public class Example {
             }
 
             System.out.println("> AFL Data");
-            HashMap<String, String> mappedValues = Util.mapDataObjects(readObjects);
+            var mappedValues = Util.mapDataObjects(readObjects);
 
-            for (BerTlv b : readObjects) {
-                String tagString = Util.hexify(b.getTag());
+            for (var b : readObjects) {
+                var tagString = Util.hexify(b.getTag());
                 System.out.printf("  %s%n", mappedValues.get(tagString));
             }
 
@@ -265,34 +265,34 @@ public class Example {
         throws Util.CardOperationFailedException, CardException
     {
         try {
-            BerTlv root = BerTlv.parseBytes(data);
+            var root = BerTlv.parseBytes(data);
 
             // pi means "proprietary information"
-            BerTlv piTlv = root.getPart("A5");
+            var piTlv = root.getPart("A5");
             if (piTlv == null) {
                 throw new Util.CardOperationFailedException("Cannot find EMV block in PSE FCI");
             }
 
             // piTlv now contains data specified in EMV_v4.3 book 1 spec,
             // section "11.3.4 Data Field Returned in the Response Message"
-            BerTlv sfiTlv = piTlv.getPart("88");
+            var sfiTlv = piTlv.getPart("88");
             if (sfiTlv == null) {
                 throw new Util.CardOperationFailedException("Cannot find SFI block in PSE FCI");
             }
 
-            byte[] defSfiData = sfiTlv.getValue();
+            var defSfiData = sfiTlv.getValue();
             int sfi = defSfiData[0];
 
             ResponseAPDU answer;
 
             // READ RECORD, see ISO/IEC 7816-4, section "7.3.3 READ RECORD (S) command"
             //                                           CLA INS P1 P2  Le
-            byte[] readRecordCommand = Util.toByteArray("00  B2  00 00  00");
+            var readRecordCommand = Util.toByteArray("00  B2  00 00  00");
             // read single record specified in P1 from EF with short EF identifier sfi
-            byte p2 = (byte)((sfi << 3) | 4);
+            var p2 = (byte)((sfi << 3) | 4);
             readRecordCommand[3] = p2;
 
-            ArrayList<byte[]> aids = new ArrayList<byte[]>();
+            var aids = new ArrayList<byte[]>();
 
             byte recordNumber = 1;
             byte expectedLength = 0;
@@ -308,7 +308,7 @@ public class Example {
                     break;
                 }
 
-                byte[] record = answer.getData();
+                var record = answer.getData();
                 if (record.length != 0) {
                     BerTlv psd = BerTlv.parseBytes(record);
                     // psd must have tag "70"
@@ -340,7 +340,7 @@ public class Example {
     private final static byte[] guessAID(CardChannel channel)
         throws CardException
     {
-        ArrayList<byte[]> candidateAIDs = new ArrayList<byte[]>(5);
+        var candidateAIDs = new ArrayList<byte[]>(5);
 
         candidateAIDs.add(Util.toByteArray("A0 00 00 00 03 20 10"));  // Visa Electron
         candidateAIDs.add(Util.toByteArray("A0 00 00 00 03 10 10"));  // Visa Classic
@@ -351,7 +351,7 @@ public class Example {
         ResponseAPDU answer;
         byte[] foundAID = null;
 
-        for (byte[] aid : candidateAIDs) {
+        for (var aid : candidateAIDs) {
             // copy AID to command array
             for (int i=0; i<7; i++) {
                 selectADFCommand[5+i] = aid[i];

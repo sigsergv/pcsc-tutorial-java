@@ -58,10 +58,10 @@ class Util {
     }
     public static Config loadConfig() 
     {
-        Properties props = new Properties();
+        var props = new Properties();
 
         try {
-            FileInputStream in = new FileInputStream("project.properties");
+            var in = new FileInputStream("project.properties");
             props.load(in);
             in.close();
         } catch (FileNotFoundException e) {
@@ -73,7 +73,7 @@ class Util {
         }
 
         // read project configuration
-        Config config = new Config();
+        var config = new Config();
         config.sector = Integer.decode(props.getProperty("sector"));
         config.ticket_price = Integer.decode(props.getProperty("ticket_price"));
         config.initial_key_a = props.getProperty("initial_key_a");
@@ -84,29 +84,29 @@ class Util {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {
-        int len = s.length();
-        byte[] buf = new byte[len/2];
+        var len = s.length();
+        var buf = new byte[len/2];
         int bufLen = 0;
         int i = 0;
         
         while (i < len) {
-            char c1 = s.charAt(i);
+            var c1 = s.charAt(i);
             i++;
             if (c1 == ' ') {
                 continue;
             }
-            char c2 = s.charAt(i);
+            var c2 = s.charAt(i);
             i++;
 
-            byte d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));
+            var d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));
             buf[bufLen] = d;
             ++bufLen;
         }
@@ -216,7 +216,7 @@ class Util {
     }
 
     public static byte[] longToBytes(long value) {
-        byte[] buf = new byte[8];
+        var buf = new byte[8];
         for (int i = 7; i >= 0; i--) {
             buf[i] = (byte)(value & 0xFF);
             value >>= 8;

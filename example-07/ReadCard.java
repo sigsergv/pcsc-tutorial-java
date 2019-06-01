@@ -26,24 +26,21 @@
  */
 
 
-import java.util.List;
 import javax.smartcardio.*;
-// import java.util.ArrayList;
 import static java.util.Arrays.copyOfRange;
-// import static java.lang.Math.max;
 
 class ReadCard {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -51,10 +48,10 @@ class ReadCard {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             ResponseAPDU answer;
 
@@ -62,7 +59,7 @@ class ReadCard {
             // write 1 (in "Lc" field) byte, 06 (in DATA block) indicates card type
             // fields "P1" and "P2" are ignored
             //                                          INS P1  P2  Lc  DATA
-            byte[] selectCommand = Util.toByteArray("FF A4  00  00  01  06");
+            var selectCommand = Util.toByteArray("FF A4  00  00  01  06");
             answer = channel.transmit(new CommandAPDU(selectCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
@@ -74,13 +71,13 @@ class ReadCard {
             // First read 32=0x20 (in "Le" field) bytes starting with address 0x00 (in "P2" field)
             // field "P1" is ignored
             //                                            INS P1  P2  Le
-            byte[] readCardCommand = Util.toByteArray("FF B0  00  00  20");
+            var readCardCommand = Util.toByteArray("FF B0  00  00  20");
             answer = channel.transmit(new CommandAPDU(readCardCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read card data");
             }
-            byte[] EEPROMData1 = answer.getData();
+            var EEPROMData1 = answer.getData();
 
             // Then read remaining 224=0xE0 (in "Le" field) bytes starting with address 0x20 (in "P2" field)
             // field "P1" is ignored
@@ -91,9 +88,9 @@ class ReadCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read card data");
             }
-            byte[] EEPROMData2 = answer.getData();
+            var EEPROMData2 = answer.getData();
 
-            byte[] EEPROMData = new byte[256];
+            var EEPROMData = new byte[256];
             for (int i=0; i<32; i++) {
                 EEPROMData[i] = EEPROMData1[i];
             }
@@ -114,23 +111,23 @@ class ReadCard {
             // read 0x04 (in "Le" field) bytes of Protection memory
             // fields "P1" and "P2" are ignored
             //                                            INS P1  P2  Le
-            byte[] readPROMCommand = Util.toByteArray("FF B2  00  00  04");
+            var readPROMCommand = Util.toByteArray("FF B2  00  00  04");
             answer = channel.transmit(new CommandAPDU(readPROMCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read protection memory data");
             }
-            byte[] PRBData = answer.getData();
+            var PRBData = answer.getData();
             System.out.printf("Protection memory bits:%n");
             for (int i=0; i<32; i++) {
                 System.out.printf("%02d ", i);
             }
             System.out.printf("%n");
-            int[] protectionBits = new int[32];
+            var protectionBits = new int[32];
             for (int k=0; k<4; k++) {
-                byte b = PRBData[k];
+                var b = PRBData[k];
                 for (int i=0; i<8; i++) {
-                    int addr = k*8 + i;
+                    var addr = k*8 + i;
                     protectionBits[addr] = (b & 1);
                     b >>= 1;
                 }
@@ -144,13 +141,13 @@ class ReadCard {
             // read 0x04 (in "Le" field) bytes of Security memory (only EC value is returned)
             // fields "P1" and "P2" are ignored
             //                                          INS P1  P2  Le
-            byte[] readECCommand = Util.toByteArray("FF B1  00  00  04");
+            var readECCommand = Util.toByteArray("FF B1  00  00  04");
             answer = channel.transmit(new CommandAPDU(readECCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Cannot read security memory data");
             }
-            byte[] ECData = answer.getData();
+            var ECData = answer.getData();
             System.out.printf("EC: %02X%n", ECData[0]);
 
             // disconnect card

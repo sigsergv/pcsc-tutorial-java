@@ -37,17 +37,17 @@ class IssueCard {
 
     public static void main(String[] args) {
         // load project configuration data
-        Util.Config config = Util.loadConfig();
+        var config = Util.loadConfig();
 
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Issue a new Balance Card%n========================%n");
 
@@ -58,20 +58,20 @@ class IssueCard {
 
             System.out.printf("Checking card sector %d... ", config.sector);
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
             CardChannel channel = card.getBasicChannel();
 
-            byte[] authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
-            byte[] readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
-            byte[] updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
-            byte firstBlock = (byte)(config.sector * 4);
+            var authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
+            var readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
+            var updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+            var firstBlock = (byte)(config.sector * 4);
             byte[] data;
             byte[] command;
 
             ResponseAPDU answer;
 
             // load Key A to cell 00
-            byte[] loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.initial_key_a);
+            var loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.initial_key_a);
             answer = channel.transmit(new CommandAPDU(loadKeysCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
@@ -101,8 +101,8 @@ class IssueCard {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Failed to read trailer with Key A.");
             }
-            byte[] trailerData = answer.getData();
-            String[] accessBits = Util.decodeAccessBits(trailerData[6], trailerData[7], trailerData[8]);
+            var trailerData = answer.getData();
+            var accessBits = Util.decodeAccessBits(trailerData[6], trailerData[7], trailerData[8]);
             if (!accessBits[3].equals("001")) {
                 card.disconnect(false);
                 throw new Util.CardCheckFailedException("Access condition bits don't match.");
@@ -130,8 +130,8 @@ class IssueCard {
             // create trailer data
             data = new byte[16];
             // fill with new Key A and Key B
-            byte[] prodKeyA = Util.toByteArray(config.prod_key_a);
-            byte[] prodKeyB = Util.toByteArray(config.prod_key_b);
+            var prodKeyA = Util.toByteArray(config.prod_key_a);
+            var prodKeyB = Util.toByteArray(config.prod_key_b);
             for (int i=0; i<6; i++) {
                 data[i] = prodKeyA[i];
                 data[10+i] = prodKeyB[i];
@@ -141,7 +141,7 @@ class IssueCard {
 
             // calculate access conditions bytes
             String[] accessConditionBits = {"000", "111", "111", "001"};
-            byte[] ac = Util.encodeAccessBits(accessConditionBits);
+            var ac = Util.encodeAccessBits(accessConditionBits);
             data[6] = ac[0];
             data[7] = ac[1];
             data[8] = ac[2];

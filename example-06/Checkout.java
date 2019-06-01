@@ -34,24 +34,24 @@ import static java.util.Arrays.copyOfRange;
 class Checkout {
     public static void main(String[] args) {
         // load project configuration data
-        Util.Config config = Util.loadConfig();
+        var config = Util.loadConfig();
 
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Checkout terminal%n=================%n");
 
-            byte[] authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
-            byte[] readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
-            byte[] updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
-            byte firstBlock = (byte)(config.sector * 4);
+            var authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
+            var readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
+            var updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+            var firstBlock = (byte)(config.sector * 4);
 
             while (true) {
                 ResponseAPDU answer;
@@ -63,11 +63,11 @@ class Checkout {
 
                 try {
                     // establish a connection to the card using autoselected protocol
-                    Card card = terminal.connect("*");
-                    CardChannel channel = card.getBasicChannel();
+                    var card = terminal.connect("*");
+                    var channel = card.getBasicChannel();
 
                     // load production Key B to cell 00
-                    byte[] loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_b);
+                    var loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_b);
                     answer = channel.transmit(new CommandAPDU(loadKeysCommand));
                     if (answer.getSW() != 0x9000) {
                         card.disconnect(false);
@@ -117,7 +117,7 @@ class Checkout {
                             card.disconnect(false);
                             throw new Util.CardUpdateFailedException("Failed to update data block.");
                         }
-                        System.out.printf("succes, new balance: %d, please remove card%n", newBalance);
+                        System.out.printf("success, new balance: %d, please remove card%n", newBalance);
                     }
                     card.disconnect(false);
                 } catch (Util.CardCheckFailedException e) {

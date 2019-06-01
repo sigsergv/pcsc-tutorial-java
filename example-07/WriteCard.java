@@ -26,24 +26,21 @@
  */
 
 
-import java.util.List;
 import javax.smartcardio.*;
-// import java.util.ArrayList;
 import static java.util.Arrays.copyOfRange;
-// import static java.lang.Math.max;
 
 class WriteCard {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -51,10 +48,10 @@ class WriteCard {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             ResponseAPDU answer;
 
@@ -62,7 +59,7 @@ class WriteCard {
             // write 1 (in "Lc" field) byte, 06 (in DATA block) indicates card type
             // fields "P1" and "P2" are ignored
             //                                          INS P1  P2  Lc  DATA
-            byte[] selectCommand = Util.toByteArray("FF A4  00  00  01  06");
+            var selectCommand = Util.toByteArray("FF A4  00  00  01  06");
             answer = channel.transmit(new CommandAPDU(selectCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
@@ -73,7 +70,7 @@ class WriteCard {
             // write 3 bytes of PSC
             // field "P1" is ignored
             //                                              INS P1  P2  Lc  Data
-            byte[] presentPSCCommand = Util.toByteArray("FF 20  00  00  03  FF FF FF");
+            var presentPSCCommand = Util.toByteArray("FF 20  00  00  03  FF FF FF");
             answer = channel.transmit(new CommandAPDU(presentPSCCommand));
             if (answer.getSW() != 0x9007) {
                 card.disconnect(false);
@@ -84,7 +81,7 @@ class WriteCard {
             // write 4 bytes "01 02 03 04" starting with address 0x40 (in "P2" field)
             // field "P1" is ignored
             //                                         INS P1 P2 Lc
-            byte[] writeCommand = Util.toByteArray("FF D0  00 40 04 01 02 03 04");
+            var writeCommand = Util.toByteArray("FF D0  00 40 04 01 02 03 04");
             answer = channel.transmit(new CommandAPDU(writeCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);

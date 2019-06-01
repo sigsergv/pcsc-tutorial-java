@@ -41,26 +41,26 @@ class Util {
         }
     }
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {
-        int len = s.length();
-        byte[] buf = new byte[len/2];
+        var len = s.length();
+        var buf = new byte[len/2];
         int bufLen = 0;
         int i = 0;
         
         while (i < len) {
-            char c1 = s.charAt(i);
+            var c1 = s.charAt(i);
             i++;
             if (c1 == ' ') {
                 continue;
             }
-            char c2 = s.charAt(i);
+            var c2 = s.charAt(i);
             i++;
 
             byte d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));
@@ -98,24 +98,24 @@ class Util {
     }
 
     public static byte[] concatArrays(byte[] a, byte[] b) {
-        byte[] buffer = new byte[a.length + b.length];
+        var buffer = new byte[a.length + b.length];
         System.arraycopy(a, 0, buffer, 0, a.length);
         System.arraycopy(b, 0, buffer, a.length, b.length);
         return buffer;
     }
 
     public static byte[] copyArray(byte[] buffer, int from, int length) {
-        byte[] res = new byte[length];
+        var res = new byte[length];
         System.arraycopy(buffer, from, res, 0, length);
         return res;
     }
 
     public static HashMap<String, String> mapDataObjects(List<BerTlv> objects) {
-        HashMap<String, String> res = new HashMap<String, String>();
+        var res = new HashMap<String, String>();
 
-        for (BerTlv b : objects) {
-            byte[] tagBytes = b.getTag();
-            String tagString = hexify(tagBytes);
+        for (var b : objects) {
+            var tagBytes = b.getTag();
+            var tagString = hexify(tagBytes);
 
             // convert tag to int value
             int tag = 0;
@@ -128,7 +128,7 @@ class Util {
             }
 
             String name = null;
-            byte[] value = b.getValue();
+            var value = b.getValue();
             String displayValue = Util.hexify(value);
 
             switch (tag) {

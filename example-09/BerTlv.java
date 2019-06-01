@@ -48,12 +48,6 @@ class BerTlv {
         }
     }
 
-    public static class ConstraintException extends Exception {
-        public ConstraintException(String message) {
-            super(message);
-        }
-    }
-
     private final byte[] tag;
     private final Encoding encoding;
     private final Class tagClass;
@@ -66,34 +60,24 @@ class BerTlv {
 
 
     // constructed value constructor
-    public BerTlv(byte[] tag, List<BerTlv> parts)
-        throws ConstraintException
-    {
+    public BerTlv(byte[] tag, List<BerTlv> parts) {
         this.tag = tag;
         this.parts = parts;
         this.value = null;
 
         this.encoding = Encoding.CONSTRUCTED;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.encoding) {
-            throw new ConstraintException("Incorrect tag encoding");
-        }
     }
 
 
     // primitive value constructor
-    public BerTlv(byte[] tag, byte[] value)
-        throws ConstraintException
-    {
+    public BerTlv(byte[] tag, byte[] value) {
         this.tag = tag;
         this.parts = null;
         this.value = value;
 
         this.encoding = Encoding.PRIMITIVE;
         this.tagClass = getClassFromTag(tag);
-        if (getEncodingFromTag(tag) != this.encoding) {
-            throw new ConstraintException("Incorrect tag encoding");
-        }
     }
 
     public byte[] getTag() {
@@ -119,9 +103,7 @@ class BerTlv {
      * @param  part [description]
      * @return      [description]
      */
-    public BerTlv addPart(BerTlv part)
-        throws ConstraintException
-    {
+    public BerTlv addPart(BerTlv part) {
         return this;
     }
 
@@ -144,11 +126,8 @@ class BerTlv {
      * Get first part tagged with tag that has binary representation tagBytesRepr
      * @param  tagBytesRepr        [description]
      * @return                     [description]
-     * @throws ConstraintException [description]
      */
-    public BerTlv getPart(String tagBytesRepr)
-        throws ConstraintException
-    {
+    public BerTlv getPart(String tagBytesRepr) {
         return getPart(Util.toByteArray(tagBytesRepr));
     }
 
@@ -156,16 +135,14 @@ class BerTlv {
      * Get first part tagged with tag tag.
      * @param  tag                 [description]
      * @return                     [description]
-     * @throws ConstraintException [description]
      */
-    public BerTlv getPart(byte[] tag)
-        throws ConstraintException
-    {
+    public BerTlv getPart(byte[] tag) {
         if (this.encoding != Encoding.CONSTRUCTED) {
-            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
+            // "Only CONSTRUCTED objects have parts."
+            return null;
         }
         BerTlv part = null;
-        for (BerTlv p : parts) {
+        for (var p : parts) {
             if (java.util.Arrays.equals(p.getTag(), tag)) {
                 part = p;
                 break;
@@ -179,13 +156,12 @@ class BerTlv {
      * Get all parts
      * @return [description]
      */
-    public BerTlv[] getParts()
-        throws ConstraintException
-    {
+    public BerTlv[] getParts() {
         if (this.encoding != Encoding.CONSTRUCTED) {
-            throw new ConstraintException("Only CONSTRUCTED objects have parts.");
+            // "Only CONSTRUCTED objects have parts."
+            return new BerTlv[0];
         }
-        BerTlv[] res = new BerTlv[parts.size()];
+        var res = new BerTlv[parts.size()];
         return parts.toArray(res);
     }
 
@@ -224,7 +200,7 @@ class BerTlv {
 
             // extract length bytes and length
             p++;
-            byte[] lengthBytes = new byte[4];
+            var lengthBytes = new byte[4];
             int lengthBytesLen = 1;
             int length = 0;
 
@@ -271,8 +247,6 @@ class BerTlv {
             Pair pair = new Pair(p+length, t);
             return pair;
 
-        } catch (ConstraintException e) {
-            throw new ParsingException("Inconsistent data");
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new ParsingException("Premature end of bytes");
         }

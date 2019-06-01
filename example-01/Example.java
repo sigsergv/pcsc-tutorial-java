@@ -25,19 +25,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.List;
 import javax.smartcardio.*;
 
 class Example {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
             System.out.println("Found terminals:");
 
             int i = 0;
-            for (CardTerminal t : terminals) {
-                ++i;
+            for (var t : terminals) {
+                i++;
                 System.out.printf("  Terminal #%d: %s %n", i, t.getName());
             }
         } catch (CardException e) {

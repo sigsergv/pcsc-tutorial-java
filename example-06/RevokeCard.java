@@ -32,16 +32,16 @@ import javax.smartcardio.*;
 class RevokeCard {
     public static void main(String[] args) {
         // load project configuration data
-        Util.Config config = Util.loadConfig();
+        var config = Util.loadConfig();
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Revoke card%n===========%n");
 
@@ -51,19 +51,19 @@ class RevokeCard {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
-            CardChannel channel = card.getBasicChannel();
+            var card = terminal.connect("*");
+            var channel = card.getBasicChannel();
 
-            byte[] authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
-            byte[] updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
-            byte firstBlock = (byte)(config.sector * 4);
+            var authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
+            var updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+            var firstBlock = (byte)(config.sector * 4);
             byte[] data;
             byte[] command;
 
             ResponseAPDU answer;
 
             // load Key A to cell 00
-            byte[] loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_a);
+            var loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_a);
             answer = channel.transmit(new CommandAPDU(loadKeysCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
@@ -100,8 +100,8 @@ class RevokeCard {
             // create initial trailer block data
             data = new byte[16];
             // fill with old Key A and Key B
-            byte[] initialKeyA = Util.toByteArray(config.initial_key_a);
-            byte[] initialKeyB = Util.toByteArray(config.initial_key_b);
+            var initialKeyA = Util.toByteArray(config.initial_key_a);
+            var initialKeyB = Util.toByteArray(config.initial_key_b);
             for (int i=0; i<6; i++) {
                 data[i] = initialKeyA[i];
                 data[10+i] = initialKeyB[i];
@@ -111,7 +111,7 @@ class RevokeCard {
 
             // calculate access conditions bytes
             String[] accessConditionBits = {"000", "000", "000", "001"};
-            byte[] ac = Util.encodeAccessBits(accessConditionBits);
+            var ac = Util.encodeAccessBits(accessConditionBits);
             data[6] = ac[0];
             data[7] = ac[1];
             data[8] = ac[2];

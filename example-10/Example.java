@@ -34,15 +34,15 @@ import java.util.HashMap;
 public class Example {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -50,7 +50,7 @@ public class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
             // System.out.printf("ATR: %s%n", Util.hexify(card.getATR().getBytes()));
 
             parseAndPrintATR(card.getATR().getBytes());
@@ -103,9 +103,9 @@ public class Example {
                 throw new ATRParsingException("Byte TS is incorrect.");
             }
 
-            ArrayList<InterfaceBytes> allInterfaceBytes = new ArrayList<InterfaceBytes>(33);
+            var allInterfaceBytes = new ArrayList<InterfaceBytes>(33);
             int historicalBytesLength = 0;
-            byte[] historicalBytes = new byte[0];
+            var historicalBytes = new byte[0];
 
             // check format byte T0
             byte T0 = bytes[1];
@@ -161,7 +161,7 @@ public class Example {
 
             System.out.println("Interface bytes:");
             p = 1;
-            for (InterfaceBytes tb : allInterfaceBytes) {
+            for (var tb : allInterfaceBytes) {
                 if (tb.TA != null) {
                     System.out.printf(" TA%d = %02X (T = %d)%n", p, tb.TA, tb.T);
                 }
@@ -183,7 +183,7 @@ public class Example {
 
             if (historicalBytes[0] == (byte)0x80) {
                 // parse all as COMPACT-TLV objects
-                int limit = historicalBytes.length;
+                var limit = historicalBytes.length;
                 p = 1;
                 while (true) {
                     if (p == limit) {
@@ -194,7 +194,7 @@ public class Example {
                     }
                     int objLen = historicalBytes[p] & 0xF;
                     int objTag = ((historicalBytes[p] >> 4) & 0xF) + 0x40;
-                    byte[] objData = Util.copyArray(historicalBytes, p+1, objLen);
+                    var objData = Util.copyArray(historicalBytes, p+1, objLen);
                     printHistoricalBytesValue(objTag, objData);
                     p += objLen + 1;
                 }
@@ -211,7 +211,7 @@ public class Example {
                     }
                     int objLen = historicalBytes[p] & 0xF;
                     int objTag = ((historicalBytes[p] >> 4) & 0xF) + 0x40;
-                    byte[] objData = Util.copyArray(historicalBytes, p+1, objLen);
+                    var objData = Util.copyArray(historicalBytes, p+1, objLen);
                     printHistoricalBytesValue(objTag, objData);
                     p += objLen + 1;
                 }
@@ -340,7 +340,7 @@ public class Example {
     }
 
     private static String[] getCapabilities(byte[] value) {
-        ArrayList<String> items = new ArrayList<String>(5);
+        var items = new ArrayList<String>(5);
         String s;
         byte b;
 

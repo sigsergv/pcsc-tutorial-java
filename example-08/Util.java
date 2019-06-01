@@ -42,8 +42,8 @@ class Util {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
@@ -55,22 +55,22 @@ class Util {
         s = s.toLowerCase();
 
         int len = s.length();
-        byte[] buf = new byte[len/2];
+        var buf = new byte[len/2];
         int bufLen = 0;
         int i = 0;
         
         while (i < len) {
-            char c1 = s.charAt(i);
+            var c1 = s.charAt(i);
             i++;
             if (c1 == ' ') {
                 continue;
             }
             try {
-                char c2 = s.charAt(i);
+                var c2 = s.charAt(i);
                 if (hexChars.indexOf(c1) == -1 || hexChars.indexOf(c2) == -1) {
                     throw new ByteStringParseException("Incorrect input character");
                 }
-                byte d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));
+                var d = (byte)((Character.digit(c1, 16) << 4) + (Character.digit(c2, 16)));
                 buf[bufLen] = d;
                 ++bufLen;
             } catch (StringIndexOutOfBoundsException e) {

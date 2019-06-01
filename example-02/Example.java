@@ -26,7 +26,6 @@
  */
 
 
-import java.util.List;
 import javax.smartcardio.*;
 import java.util.ArrayList;
 
@@ -36,15 +35,15 @@ class Example {
 
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var  terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -52,14 +51,14 @@ class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using any available protocol ("*")
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // read protocol and card ATR
             System.out.printf("  Card protocol: %s%n", card.getProtocol());
             System.out.printf("  Card ATR: %s%n", hexify(card.getATR().getBytes()));
 
             // disconnect card
-            card.disconnect(false);
+            card.disconnect(true);
 
         } catch (TerminalNotFoundException e) {
             System.out.println("No connected terminals.");
@@ -69,8 +68,8 @@ class Example {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);

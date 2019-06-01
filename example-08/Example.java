@@ -31,15 +31,15 @@ import javax.smartcardio.*;
 public class Example {
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -47,17 +47,17 @@ public class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             System.out.println("Type quit or exit to stop the program.");
 
             // start infinite loop
             while (true) {
                 System.out.print("C-APDU> ");
-                String rawAPDU = System.console().readLine();
+                var rawAPDU = System.console().readLine();
 
                 if (rawAPDU.equals("quit") || rawAPDU.equals("exit")) {
                     break;
@@ -80,10 +80,10 @@ public class Example {
                 }
 
                 System.out.printf(">>> %s%n", Util.hexify(apduBytes));
-                CommandAPDU apdu = new CommandAPDU(apduBytes);
+                var apdu = new CommandAPDU(apduBytes);
 
                 try {
-                    ResponseAPDU answer = channel.transmit(apdu);
+                    var answer = channel.transmit(apdu);
                     System.out.printf("<<< %s%n", Util.hexify(answer.getBytes()));
                 } catch (CardException e) {
                     System.out.printf("CARD EXCEPTION: %s%n", e.toString());

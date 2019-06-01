@@ -34,7 +34,7 @@ import static java.util.Arrays.copyOfRange;
 class TopUpBalance {
     public static void main(String[] args) {
         // load project configuration data
-        Util.Config config = Util.loadConfig();
+        var config = Util.loadConfig();
 
         if (args.length != 1) {
             System.out.println("Amount of funds is required.");
@@ -55,14 +55,14 @@ class TopUpBalance {
         }
         
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new Util.TerminalNotFoundException();
             }
 
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Top up card balance%n===================%n");
 
@@ -72,19 +72,19 @@ class TopUpBalance {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
-            CardChannel channel = card.getBasicChannel();
+            var card = terminal.connect("*");
+            var channel = card.getBasicChannel();
 
-            byte[] authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
-            byte[] readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
-            byte[] updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
-            byte firstBlock = (byte)(config.sector * 4);
+            var authenticateCommand = Util.toByteArray("FF 86 00 00 05 01 00 00 00 00");
+            var readBinaryCommand = Util.toByteArray("FF B0 00 00 10");
+            var updateBinaryCommand = Util.toByteArray("FF D6 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+            var firstBlock = (byte)(config.sector * 4);
             ResponseAPDU answer;
             byte[] data;
             byte[] command;
 
             // load production Key B to cell 00
-            byte[] loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_b);
+            var loadKeysCommand = Util.toByteArray("FF 82 00 00 06 " + config.prod_key_b);
             answer = channel.transmit(new CommandAPDU(loadKeysCommand));
             if (answer.getSW() != 0x9000) {
                 card.disconnect(false);
@@ -116,7 +116,7 @@ class TopUpBalance {
 
             // create APDU by cloning updateBinaryCommand template, specify target
             // block address and copy data block
-            byte[] newBalanceBytes = Util.longToBytes(newBalance);
+            var newBalanceBytes = Util.longToBytes(newBalance);
             data = new byte[16];
             for (int i=0; i<8; i++) {
                 data[i] = newBalanceBytes[i];

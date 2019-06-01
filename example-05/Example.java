@@ -26,7 +26,6 @@
  */
 
 
-import java.util.List;
 import java.util.ArrayList;
 import javax.smartcardio.*;
 import static java.util.Arrays.copyOfRange;
@@ -38,15 +37,15 @@ class Example {
 
     public static void main(String[] args) {
         try {
-            TerminalFactory factory = TerminalFactory.getDefault();
-            List<CardTerminal> terminals = factory.terminals().list();
+            var factory = TerminalFactory.getDefault();
+            var terminals = factory.terminals().list();
 
             if (terminals.size() == 0) {
                 throw new TerminalNotFoundException();
             }
 
             // get first terminal
-            CardTerminal terminal = terminals.get(0);
+            var terminal = terminals.get(0);
 
             System.out.printf("Using terminal %s%n", terminal.toString());
 
@@ -54,22 +53,22 @@ class Example {
             terminal.waitForCardPresent(0);
 
             // establish a connection to the card using autoselected protocol
-            Card card = terminal.connect("*");
+            var card = terminal.connect("*");
 
             // obtain logical channel
-            CardChannel channel = card.getBasicChannel();
+            var channel = card.getBasicChannel();
 
             // define list of keys to test
-            ArrayList<String> defaultKeys = new ArrayList<String>();
+            var defaultKeys = new ArrayList<String>();
             defaultKeys.add("FF FF FF FF FF FF");  // default NXP key
             defaultKeys.add("A0 A1 A2 A3 A4 A5");  // default Infineon Key A
             defaultKeys.add("B0 B1 B2 B3 B4 B5");  // default Infineon Key B
-            int keysNumber = defaultKeys.size();
+            var keysNumber = defaultKeys.size();
 
             // store collected data in these variables
-            ArrayList<byte[]> blocksData = new ArrayList<byte[]>(64);
-            ArrayList<String> blocksKeys = new ArrayList<String>(64);
-            ArrayList<char[]> blocksAccessBits = new ArrayList<char[]>(64);
+            var blocksData = new ArrayList<byte[]>(64);
+            var blocksKeys = new ArrayList<String>(64);
+            var blocksAccessBits = new ArrayList<char[]>(64);
 
             // print header for all sectors
             System.out.printf("Sectors: ");
@@ -97,15 +96,15 @@ class Example {
                 int firstBlock = sector * 4;
 
                 // General Authenticate APDU template
-                byte[] authenticateCommand = toByteArray("FF 86 00 00 05 01 00 00 00 00");
+                var authenticateCommand = toByteArray("FF 86 00 00 05 01 00 00 00 00");
 
                 // Read Binary APDU template
-                byte[] readBinaryCommand = toByteArray("FF B0 00 00 10");
+                var readBinaryCommand = toByteArray("FF B0 00 00 10");
 
                 for (String key : defaultKeys) {
                     // sonstruct Load Keys instruction APDU
-                    byte[] loadKeysCommand = toByteArray("FF 82 00 00 06 " + key);
-                    ResponseAPDU answer = channel.transmit(new CommandAPDU(loadKeysCommand));
+                    var loadKeysCommand = toByteArray("FF 82 00 00 06 " + key);
+                    var answer = channel.transmit(new CommandAPDU(loadKeysCommand));
                     if (answer.getSW() != 0x9000) {
                         System.out.println("Failed to load keys");
                         continue;
@@ -162,12 +161,12 @@ class Example {
                 }
 
                 // calculate and store access bits for this sector blocks
-                int lastBlock = firstBlock + 3;
-                byte[] trailerBytes = blocksData.get(lastBlock);
+                var lastBlock = firstBlock + 3;
+                var trailerBytes = blocksData.get(lastBlock);
                 if (trailerBytes != null) {
                     // get access control bytes
-                    byte b7 = trailerBytes[7];
-                    byte b8 = trailerBytes[8];
+                    var b7 = trailerBytes[7];
+                    var b8 = trailerBytes[8];
                     char[] bits;
 
                     bits = new char[3];
@@ -202,14 +201,14 @@ class Example {
             System.out.printf("                                                                                 C1 C2 C3%n");
             for (int i=0; i<64; i++) {
                 // get stored block data
-                String d = "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ";
-                byte[] bd = blocksData.get(i);
+                var d = "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ";
+                var bd = blocksData.get(i);
                 if (bd != null) {
                     d = hexify(bd);
                 }
 
                 // get stored block key
-                String key = blocksKeys.get(i);
+                var key = blocksKeys.get(i);
                 if (key == null) {
                     key = "   ?? ?? ?? ?? ?? ??";
                 }
@@ -218,7 +217,7 @@ class Example {
                 char c1 = '?';
                 char c2 = '?';
                 char c3 = '?';
-                char[] accessBits = blocksAccessBits.get(i);
+                var accessBits = blocksAccessBits.get(i);
                 if (accessBits != null) {
                     c1 = accessBits[0];
                     c2 = accessBits[1];
@@ -240,16 +239,16 @@ class Example {
     }
 
     public static String hexify(byte[] bytes) {
-        ArrayList<String> bytesStrings = new ArrayList<String>(bytes.length);
-        for (byte b : bytes) {
+        var bytesStrings = new ArrayList<String>(bytes.length);
+        for (var b : bytes) {
             bytesStrings.add(String.format("%02X", b));
         }
         return String.join(" ", bytesStrings);
     }
 
     public static byte[] toByteArray(String s) {
-        int len = s.length();
-        byte[] buf = new byte[len/2];
+        var len = s.length();
+        var buf = new byte[len/2];
         int bufLen = 0;
         int i = 0;
         
