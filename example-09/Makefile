@@ -3,7 +3,7 @@ default: run
 %.class: %.java
 	javac $<
 
-compile: Example.class Util.class BerTlv.class BerTlvTest.class
+compile: BerTlv.class BerTlvTest.class Util.class Example.class
 
 run: compile
 	java Example

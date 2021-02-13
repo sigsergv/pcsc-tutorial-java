@@ -113,9 +113,9 @@ public class Example {
                 if (pdolTlv != null) {
                     pdolData = pdolTlv.getValue();
                 }
-            } catch (BerTlv.ConstraintException e) {
-                card.disconnect(false);
-                throw new Util.CardOperationFailedException("Failed to parse SELECT response");
+//            } catch (BerTlv.ConstraintException e) {
+//                card.disconnect(false);
+//                throw new Util.CardOperationFailedException("Failed to parse SELECT response");
             } catch (BerTlv.ParsingException e) {
                 card.disconnect(false);
                 throw new Util.CardOperationFailedException("Failed to parse SELECT response");
@@ -176,8 +176,8 @@ public class Example {
                 } else {
                     throw new Util.CardOperationFailedException("Unknown response from GET PROCESSING OPTIONS command");
                 }
-            } catch (BerTlv.ConstraintException e) {
-                throw new Util.CardOperationFailedException("Failed to decode response from GET PROCESSING OPTIONS command");
+//            } catch (BerTlv.ConstraintException e) {
+//                throw new Util.CardOperationFailedException("Failed to decode response from GET PROCESSING OPTIONS command");
             } catch (BerTlv.ParsingException e) {
                 throw new Util.CardOperationFailedException("Failed to parse response from GET PROCESSING OPTIONS command");
             }
@@ -227,13 +227,9 @@ public class Example {
                         if (!recordTlv.tagEquals("70")) {
                             continue;
                         }
-                        try {
-                            for (BerTlv p : recordTlv.getParts()) {
-                                readObjects.add(p);
-                            }
-                        } catch (BerTlv.ConstraintException e) {
-                            System.out.println("BER-TLV error");
-                        }
+						for (BerTlv p : recordTlv.getParts()) {
+							readObjects.add(p);
+						}
 
                     } catch (BerTlv.ParsingException e) {
                         System.out.printf("Failed to parse data: %s%n%s%n", e, Util.hexify(recordData));
@@ -330,8 +326,8 @@ public class Example {
             } else {
                 return null;
             }
-        } catch (BerTlv.ConstraintException e) {
-            throw new Util.CardOperationFailedException("Failed to parse PSE FCI data: BerTlv encoding error");
+//        } catch (BerTlv.ConstraintException e) {
+//            throw new Util.CardOperationFailedException("Failed to parse PSE FCI data: BerTlv encoding error");
         } catch (BerTlv.ParsingException e) {
             throw new Util.CardOperationFailedException("Failed to parse PSE FCI data");
         }
