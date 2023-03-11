@@ -201,7 +201,7 @@ class Example {
             System.out.printf("                                                                                 C1 C2 C3%n");
             for (int i=0; i<64; i++) {
                 // get stored block data
-                var d = "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ";
+                var d = "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??";
                 var bd = blocksData.get(i);
                 if (bd != null) {
                     d = hexify(bd);
@@ -224,7 +224,7 @@ class Example {
                     c3 = accessBits[2];
                 }
 
-                System.out.printf("0x%02X  | %s| %s | %c  %c  %c%n", i, d, key, c1, c2, c3);
+                System.out.printf("0x%02X  | %s | %s | %c  %c  %c%n", i, d, key, c1, c2, c3);
             }
 
 
